@@ -22,21 +22,6 @@ Designed for real virology lab workflows where analysis is usually done manually
 
 📄 Clean Excel outputs for downstream analysis
 
-🧠 Experimental Context
-
-### This tool is designed for experiments with:
-
-96-well plates
-
-Quadruplicates per sample
-
-Two conditions (e.g. 0 mM and 2 mM GuHCl)
-
-Multiple timepoints, each exported as a separate file
-
-Blank wells that receive substrate but no NanoLuc RNA
-
-⚠️ Plate layout may differ between experiments — this is handled via a mapping template.
 
 ## 📥 Input
 1️⃣ Plate reader files
@@ -47,68 +32,44 @@ One file per timepoint
 
 Timepoint is parsed from the filename
 
-### Example filenames:
-
-0h post transfection.xlsx
-1h post transfection.xlsx
-2h post transfection.xlsx
-
 ## 2️⃣ Plate mapping template
 
 A CSV or Excel file describing what each well represents.
 You edit this once per experiment.
 
-Required columns
-Column	Description	Example
-well	Well ID	B3
-sample	Sample name	siNT, siFAM
-condition	Experimental condition	0mM, 2mM
-well_type	sample or blank	blank
+Columns:
+- `well` → e.g. A1, B6
+- `sample` → e.g. siNT, siFAM, siMMS, siCIAO
+- `condition` → `0mM`, `2mM`, or `all` (for shared blanks)
+- `well_type` → `sample`, `blank`, or `unused`
 
-🧪 Blank wells = no NanoLuc RNA, substrate only
-Blank subtraction is performed per condition.
+Rules:
+- Blank wells are marked as `well_type=blank` and `condition=all`
+- Unused wells must be explicitly marked as `unused`
+- Control sample name is **case-sensitive** (`siNT`)
+
+An example mapping file is provided.
 
 ## 📤 Output
-### 📄 1. Combined raw data
 
-combined_raw.xlsx
+Running the full pipeline produces:
 
-All wells
+output/
+├── combined_raw.xlsx # stacked 96-well plates (human-readable)
+├── final_analysis.xlsx # fully processed analysis table
+└── plots/
+├── 0mM_timecourse.png
+└── 2mM_timecourse.png
 
-All timepoints
 
-No processing
+### `final_analysis.xlsx` includes:
+- Replicate averages
+- Shared blank value
+- Blank-subtracted reads
+- Fold-change relative to siNT
+- Separate columns for 0 mM and 2 mM conditions
 
-Useful for QC and record keeping
-
-### 📊 2. Final analysis
-
-final_analysis.xlsx
-
-For each sample × timepoint, the following columns are generated:
-
-Column
-0mM average
-2mM average
-blank
-0mM minus blank
-2mM minus blank
-0mM (fold to siNT)
-2mM (fold to siNT)
-
-📌 Fold change is calculated relative to siNT at the same timepoint and condition.
-
-### 📈 3. Time-course plots
-
-One plot per siRNA
-
-X-axis: hours post transfection
-
-Y-axis: fold change to siNT
-
-Separate curves for 0mM and 2mM
-
-Saved as image files in the output directory.
+---
 
 ## ⚙️ Installation
 git clone <repository-url>
@@ -122,33 +83,30 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 
-## 🚀 Usage
-### Step 1 — Generate a mapping template
-python -m reporter_assay_analyzer make-template \
-  --out mapping_template.csv
+### Requirements
+- Python **3.11**
+- Windows / macOS / Linux
 
 
-Edit the template to match your plate layout.
+## ⚡ Quickstart (recommended)
 
-### Step 2 — Run the analysis
+Run the entire pipeline with one command:
+
 python -m reporter_assay_analyzer run \
-  --data-dir ./data/plates \
-  --mapping ./mapping_template.csv \
-  --out-dir ./output
+  --data-dir data/plates \
+  --mapping mapping_example.csv \
+  --out-dir output \
+  --mode fold
 
-## 🔬 Analysis Logic
 
-For each timepoint:
+This will:
 
-Average technical replicates
+Combine all plate files into one Excel file
 
-Calculate blank signal per condition
+Perform full analysis (averaging, blank subtraction, normalization)
 
-Subtract blank from sample averages
+Generate time-course plots (one plot per condition)
 
-Normalize to siNT (fold change)
-
-All calculations are independent across timepoints.
 
 ## 🗂 Project Structure
 reporter-assay-analyzer/
@@ -166,27 +124,19 @@ reporter-assay-analyzer/
 
 ## 🧪 Testing
 
-Tests cover:
-
-Timepoint parsing from filenames
-
-Mapping file validation
-
-Blank subtraction logic
-
-Fold-change calculation
+Run all tests with:
 
 pytest
 
-## 🔮 Future Improvements
+### Tests cover:
 
-CSV plate export support
+Timepoint extraction from filenames
 
-Automatic plate block detection in raw Excel files
+Plate block detection
 
-HTML summary reports
+Parsing of stacked Excel plates
 
-QC metrics (replicate CV, outlier detection)
+Correct fold-change normalization (siNT = 1)
 
 ## 🎓 Course Note
 
