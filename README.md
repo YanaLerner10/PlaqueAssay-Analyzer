@@ -28,13 +28,11 @@ Designed for real virology lab workflows where analysis is usually done manually
 
 Format: Excel (.xlsx)
 
-One file per timepoint
-
-Timepoint is parsed from the filename
+One file per timepoint, Timepoint is parsed from the filename
 
 ## 2️⃣ Plate mapping template
 
-A CSV or Excel file describing what each well represents.
+A CSV file describing what each well represents.
 You edit this once per experiment.
 
 Columns:
