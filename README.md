@@ -1,110 +1,194 @@
-# PlaqueAssay-Analyzer
+# 🧪 Reporter Assay Analyzer
 
-## Short description
-PlaqueAssay-Analyzer is a Streamlit-based Python application that automates the analysis of viral plaque assays from scanned TIFF images.  
-The tool counts plaques from single-well images, generates quality-control overlay images, and calculates viral titers (PFU/mL) in a reproducible and transparent way.
+Automated analysis of time-course NanoLuc reporter assays from 96-well plate reader data
 
----
+A Python tool that merges multiple plate-reader exports (one per timepoint), applies a flexible plate-mapping template, performs blank subtraction and normalization to control (siNT), and generates Excel result files and publication-ready time-course plots.
 
-## Why is this project interesting to me?
-Plaque assays are a routine but time-consuming part of my research workflow.  
-Currently, plaque counting is performed manually using ImageJ, followed by separate calculations in spreadsheets. This process is repetitive, prone to human error, and difficult to standardize between experiments.
+Designed for real virology lab workflows where analysis is usually done manually in Excel.
 
-This project is interesting and useful to me because it:
-- Automates a real and frequent lab task
-- Reduces manual work and calculation errors
-- Produces consistent, reproducible outputs
-- Can realistically be used beyond this course in my research
+## ✨ Key Features
 
----
+📁 Merge multiple plate-reader files into a single dataset
 
-## What does this project do?
-The application provides an end-to-end plaque assay analysis workflow:
+🧩 Flexible plate mapping (layout can change between experiments)
 
-1. Accepts scanned TIFF images of individual wells (white plaques on dark background)
-2. Allows the user to define experimental metadata (sample, dilution, replicate)
-3. Automatically detects and counts plaques using image processing
-4. Generates overlay images for quality control
-5. Calculates PFU/mL values and summary statistics
-6. Outputs results as tables and plots
+🔢 Automatic averaging of technical replicates (quadruplicates)
 
-The project is designed to work even when image filenames are inconsistent, by relying on a user-edited manifest table rather than file naming conventions.
+🚫 Blank subtraction (no NanoLuc + substrate only)
 
----
+📊 Fold-change normalization to siNT control
 
-## Input
-The project expects the following input:
+📈 Time-course plots per siRNA and condition
 
-### 1. Image data
-- A ZIP file containing `.tif` or `.tiff` images
-- Each image corresponds to a single well from a 6-well plaque assay plate
-- Plaques are expected to appear as white spots on a dark background
+📄 Clean Excel outputs for downstream analysis
 
-### 2. Manifest table (created within the app)
-A table containing experimental metadata for each image, including:
-- Image file name
-- Sample name
-- Dilution factor (e.g. `1e-5`)
-- Replicate number
-- Plated volume (default: 0.1 mL)
+🧠 Experimental Context
 
----
+### This tool is designed for experiments with:
 
-## Output
-The application produces the following outputs:
+96-well plates
 
-- `manifest.csv` – the finalized metadata table
-- `counts.csv` – plaque counts per image with quality-control metrics
-- Overlay images showing detected plaques outlined on the original image
-- `results.csv` – calculated PFU/mL values per replicate and summary statistics (mean ± SD)
-- Plots visualizing viral titers and replicate variability
+Quadruplicates per sample
 
----
+Two conditions (e.g. 0 mM and 2 mM GuHCl)
 
-## Requirements
-- Python 3.11
-- The following Python packages:
-  - streamlit
-  - opencv-python
-  - numpy
-  - pandas
-  - matplotlib
-  - pillow
+Multiple timepoints, each exported as a separate file
 
-All dependencies are listed in `requirements.txt`.
+Blank wells that receive substrate but no NanoLuc RNA
 
----
+⚠️ Plate layout may differ between experiments — this is handled via a mapping template.
 
-## Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/<your-username>/PlaqueAssay-Analyzer.git
-   cd PlaqueAssay-Analyzer
-2. Create and activate a virtual environment (Windows example):
+## 📥 Input
+1️⃣ Plate reader files
 
-py -3.11 -m venv .venv
+Format: Excel (.xlsx)
+
+One file per timepoint
+
+Timepoint is parsed from the filename
+
+### Example filenames:
+
+0h post transfection.xlsx
+1h post transfection.xlsx
+2h post transfection.xlsx
+
+## 2️⃣ Plate mapping template
+
+A CSV or Excel file describing what each well represents.
+You edit this once per experiment.
+
+Required columns
+Column	Description	Example
+well	Well ID	B3
+sample	Sample name	siNT, siFAM
+condition	Experimental condition	0mM, 2mM
+well_type	sample or blank	blank
+
+🧪 Blank wells = no NanoLuc RNA, substrate only
+Blank subtraction is performed per condition.
+
+## 📤 Output
+### 📄 1. Combined raw data
+
+combined_raw.xlsx
+
+All wells
+
+All timepoints
+
+No processing
+
+Useful for QC and record keeping
+
+### 📊 2. Final analysis
+
+final_analysis.xlsx
+
+For each sample × timepoint, the following columns are generated:
+
+Column
+0mM average
+2mM average
+blank
+0mM minus blank
+2mM minus blank
+0mM (fold to siNT)
+2mM (fold to siNT)
+
+📌 Fold change is calculated relative to siNT at the same timepoint and condition.
+
+### 📈 3. Time-course plots
+
+One plot per siRNA
+
+X-axis: hours post transfection
+
+Y-axis: fold change to siNT
+
+Separate curves for 0mM and 2mM
+
+Saved as image files in the output directory.
+
+## ⚙️ Installation
+git clone <repository-url>
+cd reporter-assay-analyzer
+
+python -m venv .venv
+  Windows
 .venv\Scripts\activate
-
- 3. Install dependencies:
+  macOS / Linux
+source .venv/bin/activate
 
 pip install -r requirements.txt
 
-4. Running the project
+## 🚀 Usage
+### Step 1 — Generate a mapping template
+python -m reporter_assay_analyzer make-template \
+  --out mapping_template.csv
 
-streamlit run app.py
 
+Edit the template to match your plate layout.
 
-The app will open in a web browser, where images can be uploaded and analyzed interactively.
+### Step 2 — Run the analysis
+python -m reporter_assay_analyzer run \
+  --data-dir ./data/plates \
+  --mapping ./mapping_template.csv \
+  --out-dir ./output
 
-## Running tests
+## 🔬 Analysis Logic
 
-Basic unit tests are provided for the data analysis and PFU/mL calculation logic.
+For each timepoint:
 
-To run tests:
+Average technical replicates
 
-python -m unittest
+Calculate blank signal per condition
 
-## Notes
+Subtract blank from sample averages
 
-This project was developed as part of a final assignment for a Python programming course.
-The repository may evolve during implementation as features are added and improved.
+Normalize to siNT (fold change)
+
+All calculations are independent across timepoints.
+
+## 🗂 Project Structure
+reporter-assay-analyzer/
+├── reporter_assay_analyzer/
+│   ├── io.py        # file loading & timepoint parsing
+│   ├── mapping.py   # plate mapping validation
+│   ├── analysis.py  # calculations & normalization
+│   ├── plots.py     # time-course plotting
+│   └── cli.py       # command-line interface
+├── tests/
+├── data/
+├── output/          # gitignored
+├── requirements.txt
+└── README.md
+
+## 🧪 Testing
+
+Tests cover:
+
+Timepoint parsing from filenames
+
+Mapping file validation
+
+Blank subtraction logic
+
+Fold-change calculation
+
+pytest
+
+## 🔮 Future Improvements
+
+CSV plate export support
+
+Automatic plate block detection in raw Excel files
+
+HTML summary reports
+
+QC metrics (replicate CV, outlier detection)
+
+## 🎓 Course Note
+
+This project was developed as part of a Python programming course.
+A link to the course repository will be added upon submission.
