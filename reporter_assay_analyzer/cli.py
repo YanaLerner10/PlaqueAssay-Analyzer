@@ -10,7 +10,7 @@ from .mapping import write_mapping_template
 from .io import parse_timepoint_hours, read_plate_matrix_xlsx
 from .stacked_parser import parse_stacked_combined_raw_xlsx
 from .analysis import analyze
-from .plots import make_timecourse_plots
+from .plots import plot_by_condition
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -41,10 +41,19 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--mapping", required=True, help="Mapping CSV file.")
     a.add_argument("--out", required=True, help="Output Excel path (e.g., output/final_analysis.xlsx).")
 
-    # 4) Plot from final_analysis.xlsx
-    pp = sub.add_parser("plot", help="Generate time-course plots from final_analysis.xlsx.")
+    # 4) Plot: ONE plot per condition (0mM, 2mM) with multiple samples as lines
+    pp = sub.add_parser(
+        "plot",
+        help="Generate time-course plots: one plot per condition (0mM / 2mM) with multiple sample lines.",
+    )
     pp.add_argument("--final", required=True, help="Path to final_analysis.xlsx")
     pp.add_argument("--out-dir", required=True, help="Output directory for plots (e.g., output/plots)")
+    pp.add_argument(
+        "--mode",
+        choices=["fold", "reads"],
+        default="fold",
+        help="Plot 'fold' (to siNT) or 'reads' (blank-subtracted). Default: fold",
+    )
 
     return p
 
@@ -147,9 +156,16 @@ def main(argv: list[str] | None = None) -> int:
         out_dir = Path(args.out_dir)
 
         final_df = pd.read_excel(final_path, sheet_name="final_analysis")
-        make_timecourse_plots(final_df, out_dir)
 
-        print(f"✅ Plots saved to: {out_dir.resolve()}")
+        # Plot one figure per condition, with sample lines like your example
+        plot_by_condition(
+            final_df,
+            out_dir,
+            y_mode=args.mode,
+            samples_order=["siNT", "siCIAO", "siFAM", "siMMS"],  # match your screenshot order
+        )
+
+        print(f"✅ Condition plots saved to: {out_dir.resolve()}")
         return 0
 
     parser.error("Unknown command")
