@@ -96,6 +96,8 @@ python -m reporter_assay_analyzer run \
   --out-dir output \
   --mode fold
 
+python -m reporter_assay_analyzer run --data-dir data/plates --mapping mapping_template.csv --out-dir output --mode fold
+
 
 This will:
 
